@@ -10,14 +10,20 @@ public class move : MonoBehaviour
     public int speed = 4;
     public float player_move;
     public bool isFacingRight = true;
-    private bool isAttacking = false;
-
     public Transform groundcheck;
     public LayerMask groundlayer;
     [SerializeField] bool isgrounded;
     Vector2 vecgravity;
     [SerializeField] int jumppower = 30;
     [SerializeField] float fall;
+
+    private bool CanDash = true;
+    private bool isDashing;
+    private float dashingPower = 24f;
+    private float dashingTime = 0.2f;
+    private float dashingCooldown =1f;
+    [SerializeField] private TrailRenderer tr;
+    int stamina = 100;
     // Start is called before the first frame update
     void Start()
     {
@@ -28,23 +34,25 @@ public class move : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(isDashing){
+            return;
+        }
         player_move = Input.GetAxisRaw("Horizontal");
         //run
-        if (Input.GetMouseButton(1))
-        {
-            // Apply increased speed when the right mouse button is held down
-            r.velocity = new Vector2(speed * 1.5f * player_move, r.velocity.y);
-            a.SetBool("run", true);
-        }
-        else
-        {
-            // Normal speed when the right mouse button is not held down
-            r.velocity = new Vector2(speed * player_move, r.velocity.y);
-            a.SetBool("run", false);
-        }
-        if (Input.GetMouseButtonUp(1))
-        {
-            a.SetBool("run", false);
+        // if (Input.GetMouseButton(1))
+        // {
+        //     // Apply increased speed when the right mouse button is held down
+        //     r.velocity = new Vector2(speed * 1.5f * player_move, r.velocity.y);
+        //     a.SetBool("run", true);
+        // }
+        // else
+        // {
+        //     // Normal speed when the right mouse button is not held down
+            //  r.velocity = new Vector2(speed * player_move, r.velocity.y);
+        //     a.SetBool("run", false);
+        // }
+        if(Input.GetMouseButton(1) && CanDash){
+            StartCoroutine(Dash());
         }
         if(isFacingRight == true && player_move == - 1) {
         transform.localScale = new Vector3(-1,1,1);
@@ -54,31 +62,14 @@ public class move : MonoBehaviour
         isFacingRight = true;}
         a.SetFloat("move", Mathf.Abs(player_move));
         //randon attack
-        if (Input.GetMouseButtonDown(0) && !isAttacking)
-        {
-            isAttacking = true;
-            
-            if (Random.Range(1, 3) == 1)
-            {
-                a.SetBool("attack", true);
+        if(Input.GetMouseButtonDown(0)){
+            if(Random.Range(1,3) == 1){
+            a.SetTrigger("attack");
             }
-            else
-            {
-                a.SetBool("attack2", true);
+            else {
+            a.SetTrigger("attack2");
             }
         }
-        AnimatorStateInfo stateInfo = a.GetCurrentAnimatorStateInfo(0);
-        if (stateInfo.IsName("attack") && stateInfo.normalizedTime >= 1.0f)
-        {
-            a.SetBool("attack", false);
-            isAttacking = false;
-        }
-        else if (stateInfo.IsName("attack2") && stateInfo.normalizedTime >= 1.0f)
-        {
-            a.SetBool("attack2", false);
-            isAttacking = false;
-        }
-        //
         isgrounded = Physics2D.OverlapCapsule(groundcheck.position, new Vector2(0.91f,0.3f),CapsuleDirection2D.Horizontal,0,groundlayer);
         if(Input.GetButtonDown("Jump") && isgrounded){
             r.velocity = new Vector2(r.velocity.x, 15);
@@ -92,5 +83,25 @@ public class move : MonoBehaviour
         if(isgrounded==true){
             a.SetBool("jump", false);
         }
+    }
+    private void FixedUpdate() {
+        if(isDashing){
+            return;
+        }
+        r.velocity = new Vector2(speed * player_move, r.velocity.y);
+    }
+    private IEnumerator Dash(){
+        CanDash = false;
+        isDashing = true;
+        float org = r.gravityScale;
+        r.gravityScale = 0f;
+        r.velocity = new Vector2(transform.localScale.x * dashingPower, 0f);
+        tr.emitting = true;
+        yield return new WaitForSeconds(dashingTime);
+        tr.emitting = false;
+        r.gravityScale = org;
+        isDashing = false;
+        yield return new WaitForSeconds(dashingCooldown);
+        CanDash = true;
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 public class camerafollow : MonoBehaviour
 {
     // Start is called before the first frame update
-    public float followspeed = 2;
+    public float followspeed = 3;
     public Transform target;
     // Update is called once per frame
     void Update()
